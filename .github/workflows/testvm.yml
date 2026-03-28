@@ -29,41 +29,48 @@ jobs:
         run: |
           # Install AnyDesk
           curl.exe -L -o anydesk.exe https://download.anydesk.com/AnyDesk.exe
-          Start-Process ./anydesk.exe -ArgumentList "--install C:\AnyDesk --start-with-win --silent"
+          # Use --silent and wait for the installer to finish its job
+          Start-Process ./anydesk.exe -ArgumentList "--install C:\AnyDesk --start-with-win --silent" -Wait
           
-          # --- FIXED: WAIT FOR PROCESS TO START ---
-          Write-Host "Waiting for AnyDesk to initialize..." -ForegroundColor Cyan
-          $attempts = 0
-          $p = $null
-          while (!$p -and $attempts -lt 20) {
-              $p = Get-Process AnyDesk -ErrorAction SilentlyContinue
-              if (!$p) { 
-                  Start-Sleep -Seconds 2
-                  $attempts++
-              }
+          # --- FIXED: WAIT FOR FILE TO EXIST ---
+          $anydeskPath = "C:\AnyDesk\AnyDesk.exe"
+          Write-Host "Waiting for AnyDesk.exe to appear at $anydeskPath..." -ForegroundColor Cyan
+          $timeout = 0
+          while (!(Test-Path $anydeskPath) -and $timeout -lt 30) {
+              Start-Sleep -Seconds 2
+              $timeout++
           }
 
-          if ($p) {
-              Write-Host "AnyDesk found. Setting RealTime Priority..." -ForegroundColor Green
-              $p.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::RealTime
+          if (Test-Path $anydeskPath) {
+              Write-Host "AnyDesk installed successfully." -ForegroundColor Green
+              # Set Priority
+              $p = Get-Process AnyDesk -ErrorAction SilentlyContinue
+              if ($p) { $p.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::RealTime }
           } else {
-              Write-Host "Warning: Could not find AnyDesk process to set priority." -ForegroundColor Yellow
+              Write-Host "Error: AnyDesk.exe not found after 60 seconds." -ForegroundColor Red
+              exit 1
           }
 
       - name: 3. Connection & Stay Alive
         shell: pwsh
         run: |
-          echo "GitHub@2026" | & "C:\AnyDesk\AnyDesk.exe" --set-password
+          $anydeskPath = "C:\AnyDesk\AnyDesk.exe"
+          # Set Password using the verified path
+          echo "GitHub@2026" | & $anydeskPath --set-password
+          
           $idFile = "C:\ProgramData\AnyDesk\system.conf"
           $ID = ""
+          Write-Host "Fetching AnyDesk ID..." -ForegroundColor Cyan
           while (!$ID) {
             if (Test-Path $idFile) { 
                 $ID = Select-String -Path $idFile -Pattern "ad.anynet.id=(.*)" | ForEach-Object { $_.Matches.Groups[1].Value }
             }
             Start-Sleep -Seconds 5
           }
+          
           Write-Host "--- ACTUAL HARDWARE SPECS ---" -ForegroundColor Green
           Get-CimInstance Win32_Processor | Select-Object Name, MaxClockSpeed
-          Write-Host "ANYDESK ID: $ID"
+          Write-Host "ANYDESK ID: $ID" -ForegroundColor White
+          Write-Host "PASSWORD: GitHub@2026" -ForegroundColor White
           
           while ($true) { Start-Sleep -Seconds 3600 }
