@@ -3,16 +3,14 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: self-hosted  # Connects to your Colab GPU
     steps:
-      - name: 1. Start AnyDesk & Monitor VM
-        shell: bash
+      - name: 1. Keep Server Alive
         run: |
-          echo "VM is booting on Colab GPU..."
-          echo "Please connect via AnyDesk once the ID appears in the Colab output."
-          
-          # This keeps the GitHub action alive for 6 hours
+          echo "VM is running on Colab GPU."
+          echo "Connect via AnyDesk using the ID shown in your Colab cell."
+          # This loop keeps the connection active for 6 hours
           for i in {1..360}; do
-            echo "Keep-alive: Minute $i"
+            echo "Status: Active - Minute $i"
             sleep 60
           done
