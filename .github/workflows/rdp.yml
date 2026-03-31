@@ -1,16 +1,1 @@
-name: Ultimate-Gaming-VM-V41-MAX-FPS
-on: workflow_dispatch
 
-jobs:
-  build:
-    runs-on: self-hosted 
-    steps:
-      - name: Keep GPU Session Alive
-        shell: bash
-        run: |
-          echo "VM is running on Colab. Connect via AnyDesk."
-          # Keeps the session active for 6 hours
-          for i in {1..360}; do
-            echo "Session Active: Minute $i"
-            sleep 60
-          done
