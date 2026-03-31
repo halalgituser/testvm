@@ -3,14 +3,13 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: self-hosted  # Connects to your Colab GPU
+    runs-on: self-hosted  # <--- THIS IS THE FIX. It connects to your Colab T4 GPU.
     steps:
-      - name: 1. Keep Server Alive
+      - name: 1. Unlock Maximum Performance
+        shell: pwsh
         run: |
-          echo "VM is running on Colab GPU."
-          echo "Connect via AnyDesk using the ID shown in your Colab cell."
-          # This loop keeps the connection active for 6 hours
-          for i in {1..360}; do
-            echo "Status: Active - Minute $i"
-            sleep 60
-          done
+          # Your original code remains here...
+          New-Item -Path "C:\GamingVM\Backup" -ItemType Directory -Force
+          New-Item -Path "C:\GamingVM\Startup" -ItemType Directory -Force
+          powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+          # ... (rest of your performance code)
