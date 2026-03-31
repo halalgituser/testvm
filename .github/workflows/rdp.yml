@@ -3,44 +3,16 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: self-hosted  # <--- Connects to your Colab GPU
+    runs-on: self-hosted
     steps:
-      - name: 1. Auto-Install GPU Drivers (The 8.5 Score)
-        shell: pwsh
+      - name: 1. Start AnyDesk & Monitor VM
+        shell: bash
         run: |
-          # Search all drives for the VirtIO drivers and install them silently
-          $DriverPath = Get-PSDrive | Where-Object { $_.Free -gt 0 } | ForEach-Object { Get-ChildItem -Path "$($_.Root)viogpu\w11\amd64" -ErrorAction SilentlyContinue }
-          if ($DriverPath) {
-              pnputil /add-driver "$($DriverPath.FullName)\*.inf" /install
-              Write-Host "✅ GPU Driver Installed Successfully!"
-          } else {
-              Write-Host "⚠️ VirtIO ISO not found. Check Colab Drive mounting."
-          }
-
-      - name: 2. Unlock Maximum Performance
-        shell: pwsh
-        run: |
-          New-Item -Path "C:\GamingVM\Startup" -ItemType Directory -Force
-          # Force High Performance Power Plan
-          powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-          # Disable Windows 11 bloatware/animations
-          reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d 9012038010000000 /f
+          echo "VM is booting on Colab GPU..."
+          echo "Please connect via AnyDesk once the ID appears in the Colab output."
           
-          # Install AnyDesk
-          curl.exe -L -o anydesk.exe https://download.anydesk.com/AnyDesk.exe
-          Start-Process ./anydesk.exe -ArgumentList "--install C:\AnyDesk --start-with-win --silent" -Wait
-
-      - name: 3. Connection & Stay Alive
-        shell: pwsh
-        run: |
-          echo "GitHub@2026" | & "C:\AnyDesk\AnyDesk.exe" --set-password
-          $idFile = "C:\ProgramData\AnyDesk\system.conf"
-          $ID = ""
-          while (!$ID) {
-            if (Test-Path $idFile) { $ID = Select-String -Path $idFile -Pattern "ad.anynet.id=(.*)" | % { $_.Matches.Groups[1].Value } }
-            Start-Sleep -Seconds 5
-          }
-          Write-Host "---------------------------"
-          Write-Host "YOUR ANYDESK ID: $ID"
-          Write-Host "---------------------------"
-          while ($true) { Start-Sleep -Seconds 3600 }
+          # This keeps the GitHub action alive for 6 hours
+          for i in {1..360}; do
+            echo "Keep-alive: Minute $i"
+            sleep 60
+          done
