@@ -1,16 +1,10 @@
 name: Ultimate-Gaming-VM-V41-MAX-FPS
 on: workflow_dispatch
-
 jobs:
   build:
-    runs-on: self-hosted  # This tells GitHub to use your Colab machine
+    runs-on: self-hosted
     steps:
-      - name: Keep GPU Session Alive
-        shell: bash
+      - name: Keep Alive
         run: |
-          echo "VM is running on Colab. Connect via AnyDesk."
-          # Keeps the session active for 6 hours
-          for i in {1..360}; do
-            echo "Session Active: Minute $i"
-            sleep 60
-          done
+          echo "VM is running. Connect via AnyDesk."
+          sleep 21600
