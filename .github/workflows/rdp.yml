@@ -1,10 +1,15 @@
 name: Ultimate-Gaming-VM-V41-MAX-FPS
 on: workflow_dispatch
+
 jobs:
   build:
     runs-on: self-hosted
     steps:
-      - name: Keep Alive
+      - name: System Keep-Alive
         run: |
-          echo "VM is running. Connect via AnyDesk."
-          sleep 21600
+          echo "Connecting to Colab Runner..."
+          # This simple loop keeps the GitHub side active for 6 hours
+          for i in {1..360}; do
+            echo "Keep-Alive Heartbeat: Minute $i"
+            sleep 60
+          done
