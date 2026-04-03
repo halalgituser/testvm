@@ -5,11 +5,22 @@ jobs:
   build:
     runs-on: self-hosted
     steps:
-      - name: System Keep-Alive
+      - name: 1. Keep-Alive Heartbeat
+        shell: bash
         run: |
-          echo "Connecting to Colab Runner..."
-          # This simple loop keeps the GitHub side active for 6 hours
-          for i in {1..360}; do
-            echo "Keep-Alive Heartbeat: Minute $i"
+          # This loop prevents the 'Runtime Disconnected' error
+          while true; do
+            echo "Heartbeat Pulse: $(date)"
+            # Small activity to trick Google's idle detection
+            ls /content > /dev/null
             sleep 60
-          done
+          done &
+          
+      - name: 2. Gaming Performance Tweaks
+        shell: pwsh
+        run: |
+          # Force High Performance
+          powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+          # Enable Hardware Acceleration
+          reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v HwSchMode /t REG_DWORD /d 2 /f
+          Write-Host "VM Optimization Complete."
