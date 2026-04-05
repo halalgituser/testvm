@@ -15,17 +15,18 @@ jobs:
           # FORCE High Performance Power Plan
           powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
 
-      - name: 2. Install Sunshine (Fixed Download)
+      - name: 2. Install Sunshine (Fixed Redirects)
         shell: pwsh
         run: |
-          # 1. Download Sunshine (Using direct release link)
-          Write-Host "Downloading Sunshine..."
-          $sunshineUrl = "https://github.com/LizardByte/Sunshine/releases/download/v0.21.0/sunshine-windows-x64-installer.exe"
-          curl.exe -L -o sunshine.exe $sunshineUrl
+          # 1. Download Sunshine Installer
+          Write-Host "Fetching Sunshine..."
+          $sunshineUrl = "https://github.com/LizardByte/Sunshine/releases/download/v0.22.2/sunshine-windows-x64-installer.exe"
+          Invoke-WebRequest -Uri $sunshineUrl -OutFile "sunshine.exe"
           
-          # Check if file is valid before installing
-          if ((Get-Item sunshine.exe).Length -lt 1000000) { 
-            Write-Error "Sunshine download failed (file too small). Check URL."
+          # Check size (Should be ~100MB)
+          $size = (Get-Item sunshine.exe).Length
+          if ($size -lt 10MB) { 
+            Write-Error "Download failed. File size is only $($size / 1KB) KB."
             exit 1 
           }
           
@@ -33,10 +34,12 @@ jobs:
           Start-Process ./sunshine.exe -ArgumentList "/S" -Wait
           
           # 2. Download ViGEmBus (For Controller Support)
-          Write-Host "Downloading ViGEmBus..."
-          $vigemUrl = "https://github.com/ViGEm/ViGEmBus/releases/download/v1.21.442.0/ViGEmBus_Setup_1.21.442.0.msi"
-          curl.exe -L -o vigembus.msi $vigemUrl
+          Write-Host "Fetching ViGEmBus..."
+          $vigemUrl = "https://github.com/ViGEm/ViGEmBus/releases/download/v1.22.1.0/ViGEmBus_Setup_1.22.1.0.msi"
+          Invoke-WebRequest -Uri $vigemUrl -OutFile "vigembus.msi"
           Start-Process msiexec.exe -ArgumentList "/i vigembus.msi /quiet /norestart" -Wait
+          
+          Write-Host "✅ Installation Complete!"
 
 
       - name: 3. Start Services & Stay Alive
