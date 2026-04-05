@@ -1,8 +1,0 @@
-name: Colab Keep Alive
-on: [workflow_dispatch]
-jobs:
-  build:
-    runs-on: self-hosted
-    steps:
-      - name: Stay Active
-        run: sleep 21600
