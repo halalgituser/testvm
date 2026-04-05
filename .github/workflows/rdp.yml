@@ -1,62 +1,58 @@
-name: Ultimate-Gaming-VM-V45-MOONLIGHT
+name: Ultimate-Gaming-VM-V46-MOONLIGHT
 on: workflow_dispatch
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: 1. Performance & VC++ Setup
+      - name: 1. Optimize & Prepare folders
         shell: pwsh
         run: |
           New-Item -Path "C:\GamingVM\Drivers" -ItemType Directory -Force
           powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-          # Install Visual C++ (Direct Link)
-          curl.exe -L -o vc_redist.x64.exe https://aka.ms/vs/17/release/vc_redist.x64.exe
-          Start-Process ./vc_redist.x64.exe -ArgumentList "/install /quiet /norestart" -Wait
+          reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d 9012038010000000 /f
 
-      - name: 2. Install Tailscale & Sunshine (Anti-Block)
+      - name: 2. Install Software via Winget (No-Block Method)
         shell: pwsh
         env:
           TS_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
         run: |
           # 1. Install Tailscale
-          curl.exe -L -o ts.exe https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe
-          Start-Process ./ts.exe -ArgumentList "/S" -Wait
+          Write-Host "Installing Tailscale..."
+          winget install --id Tailscale.Tailscale --silent --accept-package-agreements --accept-source-agreements
+          Start-Sleep -Seconds 5
           & "C:\Program Files\Tailscale\tailscale.exe" up --authkey $env:TS_KEY --hostname=github-gaming-vm
           
-          # 2. Download Sunshine (Using a Direct Release Mirror to bypass GitHub HTML block)
-          Write-Host "Downloading Sunshine..."
-          $sunshineUrl = "https://github.com/LizardByte/Sunshine/releases/download/v0.21.0/sunshine-windows-x64-installer.exe"
-          # -L follows redirects, -A mimics a real browser
-          curl.exe -L -A "Mozilla/5.0" -o sunshine.exe $sunshineUrl
+          # 2. Install Sunshine (The Host)
+          Write-Host "Installing Sunshine..."
+          winget install --id LizardByte.Sunshine --silent --accept-package-agreements --accept-source-agreements
           
-          # Size check: Must be > 50MB
-          if ((Get-Item sunshine.exe).Length -lt 50MB) {
-              Write-Error "GitHub blocked the download again. Using fallback download method..."
-              exit 1
-          }
-          Start-Process ./sunshine.exe -ArgumentList "/S" -Wait
+          # 3. Install ViGEmBus (For Controller Support)
+          Write-Host "Installing ViGEmBus..."
+          winget install --id Nefarius.ViGEmBus --silent --accept-package-agreements --accept-source-agreements
 
-      - name: 3. Controller & Display Drivers
+      - name: 3. Setup Virtual Display Driver
         shell: pwsh
         run: |
-          # ViGEmBus
-          curl.exe -L -A "Mozilla/5.0" -o vigem.msi https://github.com/ViGEm/ViGEmBus/releases/download/v1.21.442.0/ViGEmBus_Setup_1.21.442.0.msi
-          Start-Process msiexec.exe -ArgumentList "/i vigem.msi /quiet /norestart" -Wait
-          
-          # Virtual Display
-          curl.exe -L -A "Mozilla/5.0" -o vdd.zip https://github.com/ge9/IddSampleDriver/releases/download/0.0.1.2/IddSampleDriver.zip
+          # Use a direct browser-mimic download for the driver
+          $vdUrl = "https://github.com/ge9/IddSampleDriver/releases/download/0.0.1.2/IddSampleDriver.zip"
+          curl.exe -L -A "Mozilla/5.0" -o vdd.zip $vdUrl
           Expand-Archive vdd.zip -DestinationPath C:\GamingVM\Drivers\VDD
+          Write-Host "Display Driver ready in C:\GamingVM\Drivers\VDD"
 
-      - name: 4. Final Launch
+      - name: 4. Launch & Output IP
         shell: pwsh
         run: |
+          # Ensure Sunshine service is running
           Start-Process "C:\Program Files\Sunshine\sunshine.exe" -WindowStyle Hidden
+          
           $tsIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
           Write-Host "----------------------------------------------"
           Write-Host "✅ VM IS READY!"
           Write-Host "📍 TAILSCALE IP: $tsIP"
-          Write-Host "🎮 CONNECT VIA MOONLIGHT APP ON YOUR PHONE"
+          Write-Host "🎮 1. Open Moonlight on Redmi Note 7"
+          Write-Host "🎮 2. Add PC manually using IP: $tsIP"
+          Write-Host "🎮 3. Go to https://$($tsIP):47990 on phone to PAIR"
           Write-Host "----------------------------------------------"
           while ($true) { Start-Sleep -Seconds 3600 }
           
