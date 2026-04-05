@@ -1,0 +1,38 @@
+name: V43-MODAL-GPU-60FPS
+on: workflow_dispatch
+
+jobs:
+  launch-gpu:
+    runs-on: ubuntu-latest  # Linux is faster for triggering Modal
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 2. Install Modal & Bridge
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: |
+          pip install modal
+          # This creates the Python script on the fly
+          cat <<EOF > modal_run.py
+          import modal
+          # Using a specialized gaming image
+          image = modal.Image.from_registry("nvidia/cuda:12.2.0-base-ubuntu22.04").apt_install("sunshine", "curl", "libpulse0")
+          app = modal.App("max-fps-gaming")
+          @app.function(gpu="T4", image=image, timeout=3600)
+          def start_gaming():
+              import subprocess
+              print("🚀 GPU STATUS: TESLA T4 ONLINE")
+              print("------------------------------------------")
+              print("CONNECT VIA MOONLIGHT USING MODAL'S IP")
+              print("------------------------------------------")
+              # Start the streaming engine
+              subprocess.run(["sunshine"])
+          if __name__ == "__main__":
+              with modal.enable_output():
+                  start_gaming.remote()
+          EOF
+          
+          # Run the script to start the GPU
+          python modal_run.py
