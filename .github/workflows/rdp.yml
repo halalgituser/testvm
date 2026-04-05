@@ -1,59 +1,57 @@
-name: Ultimate-Gaming-VM-V47-MOONLIGHT
+name: Ultimate-Gaming-VM-V48-MOONLIGHT
 on: workflow_dispatch
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: 1. Optimize & Prepare
+      - name: 1. Performance & Folder Prep
         shell: pwsh
         run: |
           New-Item -Path "C:\GamingVM\Drivers" -ItemType Directory -Force
           powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
           reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d 9012038010000000 /f
 
-      - name: 2. Install Tailscale & Sunshine
+      - name: 2. Install Tailscale & Sunshine (Winget)
         shell: pwsh
         env:
           TS_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
         run: |
-          # 1. Install Tailscale
-          Write-Host "Installing Tailscale..."
+          # Install Tailscale
           winget install --id Tailscale.Tailscale --silent --accept-package-agreements --accept-source-agreements
           Start-Sleep -Seconds 2
           & "C:\Program Files\Tailscale\tailscale.exe" up --authkey $env:TS_KEY --hostname=github-gaming-vm
           
-          # 2. Install Sunshine (The Host)
-          Write-Host "Installing Sunshine..."
+          # Install Sunshine
           winget install --id LizardByte.Sunshine --silent --accept-package-agreements --accept-source-agreements
+
+      - name: 3. Manual Driver Installation (Bypass Winget)
+        shell: pwsh
+        run: |
+          # Direct Download for ViGEmBus (Required for your controller)
+          Write-Host "Downloading ViGEmBus manually..."
+          curl.exe -L -A "Mozilla/5.0" -o vigem.msi https://github.com/ViGEm/ViGEmBus/releases/download/v1.21.442.0/ViGEmBus_Setup_1.21.442.0.msi
+          Start-Process msiexec.exe -ArgumentList "/i vigem.msi /quiet /norestart" -Wait
           
-          # 3. Install ViGEmBus (Corrected ID for 2026)
-          Write-Host "Installing ViGEmBus..."
-          winget install --id NefariusSoftwareSolutions.ViGEmBus --silent --accept-package-agreements --accept-source-agreements
-
-      - name: 3. Setup Virtual Display Driver (Anti-Black-Screen)
-        shell: pwsh
-        run: |
-          # Use a stable Ione Driver for the headless display
-          $vdUrl = "https://github.com/ge9/IddSampleDriver/releases/download/0.0.1.2/IddSampleDriver.zip"
-          curl.exe -L -A "Mozilla/5.0" -o vdd.zip $vdUrl
+          # Direct Download for Virtual Display (Anti-Black-Screen)
+          Write-Host "Downloading Virtual Display..."
+          curl.exe -L -A "Mozilla/5.0" -o vdd.zip https://github.com/ge9/IddSampleDriver/releases/download/0.0.1.2/IddSampleDriver.zip
           Expand-Archive vdd.zip -DestinationPath C:\GamingVM\Drivers\VDD
-          Write-Host "Display Driver files placed in C:\GamingVM\Drivers\VDD"
 
-      - name: 4. Launch & Output IP
+      - name: 4. Launch & Get IP
         shell: pwsh
         run: |
-          # Start Sunshine Service
+          # Start Sunshine
           Start-Process "C:\Program Files\Sunshine\sunshine.exe" -WindowStyle Hidden
           
           $tsIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
           Write-Host "----------------------------------------------"
-          Write-Host "✅ SUCCESS! VM IS READY FOR ACTION"
-          Write-Host "📍 YOUR TAILSCALE IP: $tsIP"
+          Write-Host "🚀 BOOT COMPLETE!"
+          Write-Host "📍 TAILSCALE IP: $tsIP"
           Write-Host "🎮 1. Open Moonlight on Redmi Note 7"
-          Write-Host "🎮 2. Click '+' and add IP: $tsIP"
-          Write-Host "🎮 3. Open phone browser to: https://$($tsIP):47990"
-          Write-Host "🎮 4. Enter the PIN from Moonlight in the browser"
+          Write-Host "🎮 2. Manually add IP: $tsIP"
+          Write-Host "🎮 3. Open Chrome on phone: https://$($tsIP):47990"
+          Write-Host "🎮 4. Go to PIN tab & enter the Moonlight code"
           Write-Host "----------------------------------------------"
           while ($true) { Start-Sleep -Seconds 3600 }
           
