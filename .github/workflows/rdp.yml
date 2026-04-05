@@ -1,56 +1,65 @@
-name: Ultimate-Gaming-VM-V43-MOONLIGHT
+name: Ultimate-Gaming-VM-V44-MOONLIGHT
 on: workflow_dispatch
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: 1. Unlock Maximum Performance
+      - name: 1. Optimize & Prepare
         shell: pwsh
         run: |
           New-Item -Path "C:\GamingVM\Drivers" -ItemType Directory -Force
           powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-          reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d 9012038010000000 /f
-          # Install Visual C++
-          curl.exe -L -o vc_redist.x64.exe https://aka.ms/vs/17/release/vc_redist.x64.exe
+          # Required for Sunshine setup
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "vc_redist.x64.exe"
           Start-Process ./vc_redist.x64.exe -ArgumentList "/install /quiet /norestart" -Wait
 
-      - name: 2. Install Tailscale & Sunshine
+      - name: 2. Install Tailscale & Sunshine (Fixed Redirects)
         shell: pwsh
         env:
           TS_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
         run: |
           # Install Tailscale
-          curl.exe -L -o ts.exe https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe
+          Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "ts.exe"
           Start-Process ./ts.exe -ArgumentList "/S" -Wait
           & "C:\Program Files\Tailscale\tailscale.exe" up --authkey $env:TS_KEY --hostname=github-gaming-vm
           
-          # Install Sunshine (LizardByte)
-          curl.exe -L -o sunshine.exe https://github.com/LizardByte/Sunshine/releases/download/v0.21.0/sunshine-windows-x64-installer.exe
-          Start-Process ./sunshine.exe -ArgumentList "/S" -Wait
+          # Install Sunshine - Using direct download link that handles redirects better
+          Write-Host "Downloading Sunshine..."
+          $sunshineUrl = "https://github.com/LizardByte/Sunshine/releases/download/v0.21.0/sunshine-windows-x64-installer.exe"
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Invoke-WebRequest -Uri $sunshineUrl -OutFile "sunshine.exe" -MaximumRedirection 5
           
-          # Install ViGEmBus
-          curl.exe -L -o vigem.msi https://github.com/ViGEm/ViGEmBus/releases/download/v1.21.442.0/ViGEmBus_Setup_1.21.442.0.msi
-          Start-Process msiexec.exe -ArgumentList "/i vigem.msi /quiet /norestart" -Wait
+          # SAFETY CHECK: Verify Sunshine is at least 50MB
+          if ((Get-Item sunshine.exe).Length -lt 50MB) {
+              Write-Error "Download failed! File too small. Check GitHub secrets/permissions."
+              exit 1
+          }
+          
+          Start-Process ./sunshine.exe -ArgumentList "/S" -Wait
 
-      - name: 3. Setup Virtual Display (Anti-Black-Screen)
+      - name: 3. Controller Support & Display
         shell: pwsh
         run: |
-          # Use a more reliable IDD Driver link
-          $vdUrl = "https://github.com/ge9/IddSampleDriver/releases/download/0.0.1.2/IddSampleDriver.zip"
-          curl.exe -L -o vdd.zip $vdUrl
+          # ViGEmBus for Controller
+          Invoke-WebRequest -Uri "https://github.com/ViGEm/ViGEmBus/releases/download/v1.21.442.0/ViGEmBus_Setup_1.21.442.0.msi" -OutFile "vigem.msi"
+          Start-Process msiexec.exe -ArgumentList "/i vigem.msi /quiet /norestart" -Wait
+          
+          # Virtual Display Driver
+          Invoke-WebRequest -Uri "https://github.com/ge9/IddSampleDriver/releases/download/0.0.1.2/IddSampleDriver.zip" -OutFile "vdd.zip"
           Expand-Archive vdd.zip -DestinationPath C:\GamingVM\Drivers\VDD
-          Write-Host "Virtual Display Driver downloaded. If screen is black, install from C:\GamingVM\Drivers\VDD"
 
-      - name: 4. Launch & Keep Alive
+      - name: 4. Launch & Output IP
         shell: pwsh
         run: |
           Start-Process "C:\Program Files\Sunshine\sunshine.exe" -WindowStyle Hidden
           $tsIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
           Write-Host "----------------------------------------------"
-          Write-Host "✅ SUCCESS! VM IS ONLINE"
+          Write-Host "✅ VM IS READY FOR MOONLIGHT"
           Write-Host "📍 TAILSCALE IP: $tsIP"
-          Write-Host "🎮 CONNECT VIA MOONLIGHT APP"
+          Write-Host "🎮 1. Open Moonlight on Redmi Note 7"
+          Write-Host "🎮 2. Add PC: $tsIP"
+          Write-Host "🎮 3. Go to https://$($tsIP):47990 to Pair"
           Write-Host "----------------------------------------------"
           while ($true) { Start-Sleep -Seconds 3600 }
           
