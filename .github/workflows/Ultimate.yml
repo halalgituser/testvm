@@ -18,10 +18,10 @@ jobs:
           import modal
           import subprocess
 
-          # Gaming-optimized image
+          # Use a stable base and update it before installing tools
           image = (
               modal.Image.from_registry("nvidia/cuda:12.2.0-base-ubuntu22.04")
-              .apt_install("sunshine", "curl", "libpulse0", "xserver-xorg-video-dummy")
+              .run_commands("apt-get update", "apt-get install -y sunshine curl libpulse0 xserver-xorg-video-dummy")
           )
 
           app = modal.App("max-fps-gaming")
@@ -33,14 +33,14 @@ jobs:
               print("PASSWORD: admin")
               print("------------------------------------------")
               
-              # Start Sunshine with a pre-set password for your phone
-              # This prevents you from getting locked out at the office
+              # Force Sunshine to run
               subprocess.run(["sunshine", "--password", "admin"])
 
           if __name__ == "__main__":
-              # FIX: Using 'with app.run()' ensures the function is 'hydrated'
-              with app.run():
-                  start_gaming.remote()
+              # enable_output() helps us see the install progress
+              with modal.enable_output():
+                  with app.run():
+                      start_gaming.remote()
           EOF
           
           python modal_run.py
