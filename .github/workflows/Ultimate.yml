@@ -18,10 +18,15 @@ jobs:
           import modal
           import subprocess
 
-          # Use a stable base and update it before installing tools
           image = (
               modal.Image.from_registry("nvidia/cuda:12.2.0-base-ubuntu22.04")
-              .run_commands("apt-get update", "apt-get install -y sunshine curl libpulse0 xserver-xorg-video-dummy")
+              .run_commands(
+                  "apt-get update",
+                  "apt-get install -y wget curl libpulse0 xserver-xorg-video-dummy libevdev2",
+                  # Download and install Sunshine directly from GitHub
+                  "wget https://github.com/LizardByte/Sunshine/releases/download/v2024.1112.152857/sunshine-ubuntu-22.04-amd64.deb",
+                  "apt-get install -y ./sunshine-ubuntu-22.04-amd64.deb"
+              )
           )
 
           app = modal.App("max-fps-gaming")
@@ -33,11 +38,10 @@ jobs:
               print("PASSWORD: admin")
               print("------------------------------------------")
               
-              # Force Sunshine to run
+              # Start Sunshine
               subprocess.run(["sunshine", "--password", "admin"])
 
           if __name__ == "__main__":
-              # enable_output() helps us see the install progress
               with modal.enable_output():
                   with app.run():
                       start_gaming.remote()
