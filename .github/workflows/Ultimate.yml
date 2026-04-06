@@ -18,14 +18,15 @@ jobs:
           import modal
           import subprocess
 
+          # We combine everything into one 'run_commands' block for speed
           image = (
               modal.Image.from_registry("nvidia/cuda:12.2.0-base-ubuntu22.04")
               .run_commands(
                   "apt-get update",
-                  "apt-get install -y wget curl libpulse0 xserver-xorg-video-dummy libevdev2",
-                  # Download and install Sunshine directly from GitHub
-                  "wget https://github.com/LizardByte/Sunshine/releases/download/v2024.1112.152857/sunshine-ubuntu-22.04-amd64.deb",
-                  "apt-get install -y ./sunshine-ubuntu-22.04-amd64.deb"
+                  "DEBIAN_FRONTEND=noninteractive apt-get install -y wget curl libpulse0 xserver-xorg-video-dummy libevdev2 libx11-6",
+                  "wget -q https://github.com/LizardByte/Sunshine/releases/download/v2024.1112.152857/sunshine-ubuntu-22.04-amd64.deb",
+                  "apt-get install -y ./sunshine-ubuntu-22.04-amd64.deb",
+                  "rm sunshine-ubuntu-22.04-amd64.deb"
               )
           )
 
@@ -38,7 +39,7 @@ jobs:
               print("PASSWORD: admin")
               print("------------------------------------------")
               
-              # Start Sunshine
+              # Run sunshine in the background
               subprocess.run(["sunshine", "--password", "admin"])
 
           if __name__ == "__main__":
